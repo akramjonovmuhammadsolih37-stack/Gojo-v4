@@ -2,17 +2,22 @@
 """
 GOJO-USERBOT — Asosiy fayl
 """
-import sys, os, importlib, glob, asyncio, inspect
+import sys, os, importlib, glob, asyncio
 
+# PanelLogger - bytes ham qabul qiladi
 class PanelLogger:
     def __init__(self, stream):
         self.stream = stream
     def write(self, msg):
+        if isinstance(msg, bytes):
+            msg = msg.decode("utf-8", errors="replace")
         if msg.strip():
             self.stream.write(msg)
             self.stream.flush()
     def flush(self):
         self.stream.flush()
+    def fileno(self):
+        return self.stream.fileno()
 
 sys.stdout = PanelLogger(sys.__stdout__)
 sys.stderr = PanelLogger(sys.__stderr__)
@@ -47,19 +52,15 @@ for filepath in plugin_files:
     module_name = f"zeus.{filename[:-3]}"
     try:
         module = importlib.import_module(module_name)
-
         count = 0
 
-        # METHOD 1: HANDLERS ro'yxati
         if hasattr(module, "HANDLERS"):
             for handler, event in module.HANDLERS:
                 client.add_event_handler(handler, event)
                 count += 1
 
-        # METHOD 2: vars() orqali barcha ob'ektlarni tekshir
         for attr_name in vars(module):
             obj = getattr(module, attr_name)
-            # async funksiya va _events atributi bor
             if callable(obj) and hasattr(obj, "_events"):
                 for ev in obj._events:
                     client.add_event_handler(obj, ev)
